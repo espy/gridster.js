@@ -17,7 +17,7 @@ gridster = $(".gridster > ul").gridster({
 }).data('gridster');
 ````
 
-Then there's a new `gridster.resizeGridster(widgetWidth, widgetHeigh)` function that takes your target width and height and then redraws the grid with new, resized widgets. You should recalculate your desired column width on resize and then pass that to `resizeGridster`. Debouncing is a good idea, too:
+Then there's a new `gridster.resizeGridster(widgetWidth, widgetHeight)` function that takes your target width and height and then redraws the grid with new, resized widgets. You should recalculate your desired column width on resize and then pass that to `resizeGridster`. Debouncing is a good idea, too:
 
 ````
 $(window).resize(function() {
