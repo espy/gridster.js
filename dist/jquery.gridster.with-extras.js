@@ -1,6 +1,6 @@
-/*! gridster.js - v0.2.1 - 2013-10-28
+/*! gridster.js - v0.2.1 - 2014-01-24
 * http://gridster.net/
-* Copyright (c) 2013 ducksboard; Licensed MIT */
+* Copyright (c) 2014 ducksboard; Licensed MIT */
 
 ;(function($, window, document, undefined){
     /**
@@ -629,7 +629,8 @@
         this.player_width = this.$player.width();
         this.player_height = this.$player.height();
 
-        var container_width = this.options.container_width || this.$container.width();
+        // flexiGridster change so drag area width updates correctly
+        var container_width = this.$container.width();
         this.player_max_left = (container_width - this.player_width +
             this.options.offset_left);
 
@@ -3322,7 +3323,7 @@
     */
     fn.generate_stylesheet = function(opts) {
         var styles = '';
-        var max_size_x = this.options.max_size_x || this.cols;
+        var max_size_x = this.options.max_size_x;
         var max_rows = 0;
         var max_cols = 0;
         var i;
@@ -3332,29 +3333,19 @@
         opts.cols || (opts.cols = this.cols);
         opts.rows || (opts.rows = this.rows);
         opts.namespace || (opts.namespace = this.options.namespace);
-        opts.widget_base_dimensions ||
-            (opts.widget_base_dimensions = this.options.widget_base_dimensions);
-        opts.widget_margins ||
-            (opts.widget_margins = this.options.widget_margins);
+        opts.widget_base_dimensions || (opts.widget_base_dimensions = this.options.widget_base_dimensions);
+        opts.widget_margins || (opts.widget_margins = this.options.widget_margins);
         opts.min_widget_width = (opts.widget_margins[0] * 2) +
             opts.widget_base_dimensions[0];
         opts.min_widget_height = (opts.widget_margins[1] * 2) +
             opts.widget_base_dimensions[1];
-
-        // don't duplicate stylesheets for the same configuration
-        var serialized_opts = $.param(opts);
-        if ($.inArray(serialized_opts, Gridster.generated_stylesheets) >= 0) {
-            return false;
-        }
-
-        Gridster.generated_stylesheets.push(serialized_opts);
 
         /* generate CSS styles for cols */
         for (i = opts.cols; i >= 0; i--) {
             styles += (opts.namespace + ' [data-col="'+ (i + 1) + '"] { left:' +
                 ((i * opts.widget_base_dimensions[0]) +
                 (i * opts.widget_margins[0]) +
-                ((i + 1) * opts.widget_margins[0])) + 'px; }\n');
+                ((i + 1) * opts.widget_margins[0])) + 'px;} ');
         }
 
         /* generate CSS styles for rows */
@@ -3362,19 +3353,19 @@
             styles += (opts.namespace + ' [data-row="' + (i + 1) + '"] { top:' +
                 ((i * opts.widget_base_dimensions[1]) +
                 (i * opts.widget_margins[1]) +
-                ((i + 1) * opts.widget_margins[1]) ) + 'px; }\n');
+                ((i + 1) * opts.widget_margins[1]) ) + 'px;} ');
         }
 
         for (var y = 1; y <= opts.rows; y++) {
             styles += (opts.namespace + ' [data-sizey="' + y + '"] { height:' +
                 (y * opts.widget_base_dimensions[1] +
-                (y - 1) * (opts.widget_margins[1] * 2)) + 'px; }\n');
+                (y - 1) * (opts.widget_margins[1] * 2)) + 'px;}');
         }
 
-        for (var x = 1; x <= max_size_x; x++) {
+        for (var x = 1; x <= opts.cols; x++) {
             styles += (opts.namespace + ' [data-sizex="' + x + '"] { width:' +
                 (x * opts.widget_base_dimensions[0] +
-                (x - 1) * (opts.widget_margins[0] * 2)) + 'px; }\n');
+                (x - 1) * (opts.widget_margins[0] * 2)) + 'px;}');
         }
 
         return this.add_style_tag(styles);
@@ -3389,21 +3380,20 @@
     * @return {Object} Returns the instance of the Gridster class.
     */
     fn.add_style_tag = function(css) {
-      var d = document;
-      var tag = d.createElement('style');
+        var d = document;
+        var tag = d.createElement('style');
 
-      d.getElementsByTagName('head')[0].appendChild(tag);
-      tag.setAttribute('type', 'text/css');
+        tag.setAttribute('generated-from', 'gridster');
 
-      if (tag.styleSheet) {
-        tag.styleSheet.cssText = css;
-      }else{
-        tag.appendChild(document.createTextNode(css));
-      }
+        d.getElementsByTagName('head')[0].appendChild(tag);
+        tag.setAttribute('type', 'text/css');
 
-      this.$style_tags = this.$style_tags.add(tag);
-
-      return this;
+        if (tag.styleSheet) {
+            tag.styleSheet.cssText = css;
+        } else {
+            tag.appendChild(document.createTextNode(css));
+        }
+        return this;
     };
 
 
@@ -3640,6 +3630,44 @@
 
         return this;
     };
+
+    fn.resize_widget_dimensions = function(options) {
+      if (options.widget_margins) {
+          this.options.widget_margins = options.widget_margins;
+      }
+
+      if (options.widget_base_dimensions) {
+          this.options.widget_base_dimensions = options.widget_base_dimensions;
+      }
+
+      this.min_widget_width  = (this.options.widget_margins[0] * 2)
+      + this.options.widget_base_dimensions[0];
+      this.min_widget_height = (this.options.widget_margins[1] * 2)
+      + this.options.widget_base_dimensions[1];
+
+      var serializedGrid = this.serialize();
+
+      this.$widgets.each($.proxy(function(i, widget) {
+
+          var $widget = $(widget);
+          var data = serializedGrid[i];
+
+          this.resize_widget($widget, data.sizex, data.sizey);
+
+      }, this));
+
+          this.generate_stylesheet(options)
+
+          $('head [generated-from="gridster"]:not(:last)').remove();
+
+          return false;
+      };
+
+      fn.resizeGridster = function(widgetWidth, widgetHeight){
+        if(!widgetWidth || !widgetHeight) return;
+        $('head [generated-from="gridster"]:not(:last)').remove();
+        this.resize_widget_dimensions({widget_base_dimensions: [widgetWidth, widgetHeight]});
+      }
 
 
     //jQuery adapter

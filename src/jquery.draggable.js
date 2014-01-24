@@ -269,7 +269,8 @@
         this.player_width = this.$player.width();
         this.player_height = this.$player.height();
 
-        var container_width = this.options.container_width || this.$container.width();
+        // flexiGridster change so drag area width updates correctly
+        var container_width = this.$container.width();
         this.player_max_left = (container_width - this.player_width +
             this.options.offset_left);
 
