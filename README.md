@@ -1,7 +1,32 @@
 Gridster.js
 ===========
 
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/ducksboard/gridster.js/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+This is a fork that allows you to set relative column sizes and have the layout update on window resize. It's work in progress and highly untested, but works for widths right now. It's based on the work done by others in [this gh issue thread](https://github.com/ducksboard/gridster.js/pull/77/files).
+
+To set relative sizes, you need to calculate the column width based on screen width, number of columns, and gutter width:
+
+````
+var maximumColumns = 6;
+var widgetMargin = 5;
+
+var widgetWidth= Math.floor(($(".gridster > ul").width() / maximumColumns) - (widgetMargin * 2));
+
+gridster = $(".gridster > ul").gridster({
+    widget_margins: [widgetMargin, widgetMargin],
+    widget_base_dimensions: [widgetWidth, 100]
+}).data('gridster');
+````
+
+Then there's a new `gridster.resizeGridster(widgetWidth, widgetHeigh)` function that takes your target width and height and then redraws the grid with new, resized widgets. You should recalculate your desired column width on resize and then pass that to `resizeGridster`. Debouncing is a good idea, too:
+
+````
+$(window).resize(function() {
+  var widgetWidth= Math.floor(($(".gridster > ul").width() / maximumColumns) - (widgetMargin * 2));
+  gridster.resizeGridster(widgetWidth, 100);
+});
+````
+
+## Original readme follows:
 
 Gridster is a jQuery plugin that makes building intuitive draggable
 layouts from elements spanning multiple columns. You can even
